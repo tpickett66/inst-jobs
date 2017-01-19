@@ -56,6 +56,24 @@ shared_examples_for 'random ruby objects' do
         lambda { obj.test_method }.should change { Delayed::Job.jobs_count(:current) }.by(1)
       end
 
+      it 'must work with kwargs in the original method' do
+        klass = Class.new do
+          attr_reader :run
+          def test_method(my_kwarg: nil); @run = my_kwarg; end
+          add_send_later_methods :test_method
+
+          def other_test(arg); @foo = arg; end
+          add_send_later_methods :other_test
+        end
+
+        obj = klass.new
+        obj.test_method(my_kwarg: 'foo', synchronous: true)
+        expect(obj.run).to eq 'foo'
+
+        # obj.test_method_without_send_later(my_kwarg: 'bar')
+        # expect(obj.run).to eq 'bar'
+      end
+
       it "should work without default_async" do
         klass = Class.new do
           attr_accessor :ran
